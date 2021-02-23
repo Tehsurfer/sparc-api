@@ -169,10 +169,12 @@ def sim_dataset(id):
 def kb_search(query):
     try:
         response = requests.get(f'{Config.SCI_CRUNCH_HOST}/_search?q={query}&api_key={Config.KNOWLEDGEBASE_KEY}')
-        return process_kb_results(response.json())
-    except requests.exceptions.HTTPError as err:
-        logging.error(err)
-        return json.dumps({'error': err})
+        return jsonify(process_kb_results(response.json())), 200
+    except json.JSONDecodeError:
+        return jsonify({'message': 'Could not parse Scicrunch output, please try again later',
+                        'error': 'JSONDecodeError'}), 502
+    except:
+        return jsonify({'message': 'unexpeceted error','error': 'unkown'}), 500
 
 
 # /filter-search/: Returns scicrunch results with optional params for facet filtering, sizing, and pagination
@@ -199,8 +201,50 @@ def filter_search(query):
     except json.JSONDecodeError as e:
         return jsonify({'message': 'Could not parse Scicrunch output, please try again later',
                         'error': 'JSONDecodeError'}), 502
-    return results
+    return jsonify(results), 200
 
+
+# /get-facets/: Returns available scicrunch facets for filtering over given a <type> ('species', 'gender' etc)
+@app.route("/interlax/<term>")
+def ilx(term):
+    data = {
+    "size": 20,
+    "from": 0,
+    "query": {
+        "bool": {
+            "must": [ {
+                "match_phrase": {
+                    "label": {
+                        "query": term
+                    }
+                }
+            },
+            {
+                "term": {
+                    "type": {
+                        "value": "term"
+                    }
+                }
+            } ]
+        }
+    },
+    "_source": ["label","existing_ids.curie"]
+}
+
+    # Send request to scicrunch
+    try:
+        response = requests.post(
+            f'{Config.ILX_HOST}/_search?api_key={Config.KNOWLEDGEBASE_KEY}',
+            json=data)
+        results = process_ilx( response.json())
+    except requests.exceptions.HTTPError as err:
+        logging.error(err)
+        return jsonify(
+            {'error': str(err), 'message': 'Scicrunch is not currently reachable, please try again later'}), 502
+    except json.JSONDecodeError as e:
+        return jsonify({'message': 'Could not parse Scicrunch output, please try again later',
+                        'error': 'JSONDecodeError'}), 502
+    return jsonify(results), 200
 
 # /get-facets/: Returns available scicrunch facets for filtering over given a <type> ('species', 'gender' etc)
 @app.route("/get-facets/<type>")
@@ -228,7 +272,7 @@ def get_facets(type):
     for result in results:
         terms += result['aggregations'][f'{type}']['buckets']
 
-    return jsonify(terms)
+    return jsonify(terms), 200
 
 
 def inject_markdown(resp):

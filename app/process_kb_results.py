@@ -109,7 +109,14 @@ def process_kb_results(results):
         attr['doi'] = convert_doi_to_url(attr['doi'])
         attr['csvFiles'] = find_csv_files(attr['csvFiles'])
         output.append(attr)
-    return json.dumps({'numberOfHits': results['hits']['total'], 'results': output})
+    return {'numberOfHits': results['hits']['total'], 'results': output}
+
+
+def process_ilx(results):
+    if not results['hits']['hits']:
+        return []
+    else:
+        return [r['curie'] for r in results['hits']['hits'][0]['_source']['existing_ids']]
 
 
 def convert_doi_to_url(doi):

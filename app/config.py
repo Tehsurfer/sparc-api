@@ -31,3 +31,4 @@ class Config(object):
     DEPLOY_ENV = os.environ.get("DEPLOY_ENV", "development")
     SPARC_APP_HOST = os.environ.get("SPARC_APP_HOST", "https://sparc-app.herokuapp.com")
     SCI_CRUNCH_HOST = os.environ.get("SCICRUNCH_HOST", "https://scicrunch.org/api/1/elastic/SPARC_Datasets_pr")
+    ILX_HOST = os.environ.get("ILX_HOST", "https://scicrunch.org/api/1/elastic/Interlex_pr")
