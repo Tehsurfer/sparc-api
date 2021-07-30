@@ -136,13 +136,18 @@ def process_kb_results(results):
     hits = results['hits']['hits']
     for i, hit in enumerate(hits):
         attr = _get_attributes(attributes, hit)
+        objects = attr['files']
         attr['doi'] = _convert_doi_to_url(attr['doi'])
         attr.update(_sort_files_by_mime_type(attr['files']))
-
+        attr['scaffolds'] = find_scaffold_json_files(objects)
         output.append(_manipulate_attr(attr))
 
     return json.dumps({'numberOfHits': results['hits']['total'], 'results': output})
 
+def find_scaffold_json_files(obj_list):
+    if not obj_list:
+        return obj_list
+    return [obj for obj in obj_list if obj.get('additional_mimetype', {}).get('name', 'none') == 'inode/vnd.abi.scaffold+file']
 
 def _convert_doi_to_url(doi):
     if not doi:
@@ -238,11 +243,12 @@ def _get_attributes(attributes_, dataset):
     for k, attr in attributes_.items():
         subset = dataset['_source']  # set our subset to the full dataset result
         key_attr = False
-        for key in attr:
+        for n, key in enumerate(attr): # continue if keys are found
             if isinstance(subset, dict):
                 if key in subset.keys():
                     subset = subset[key]
-                    key_attr = subset
+                    if n+1 is len(attr): # if we made it to the end, save this subset
+                        key_attr = subset
         found_attr[k] = key_attr
     return found_attr
 
