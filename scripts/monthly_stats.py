@@ -43,6 +43,10 @@ class MonthlyStats(object):
         return self.send_stats(self.user_stats)
 
     def get_stats(self):
+        self.get_download_stats()
+        self.get_view_stats()
+
+    def get_download_stats(self):
         self._pennsieve_temp_api_key = self.pennsieve_login()
         metrics = self.get_download_metrics_one_month()
         dataset_details_for_downloaded_datasets = self.get_dataset_details_from_pennsieve(metrics)
@@ -50,6 +54,9 @@ class MonthlyStats(object):
         self.pennsieve_user_details = self.get_emails_orcid_id_map_from_pennsieve()
         self.add_emails_to_user_stats_object()
         return self.user_stats
+
+    def get_view_stats(self):
+        return None # get view stats
 
     def send_stats(self, user_stats):
         responses = []

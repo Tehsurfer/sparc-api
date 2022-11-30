@@ -50,3 +50,47 @@ def get_ga_1year_sessions(analytics):
 
     except:
         return None
+
+def get_ga_page_views_report(analytics, months=1):
+
+    start_date = datetime.now() - relativedelta(months=months)
+    formatted_start_date = start_date.strftime('%Y-%m-%d')
+    report = analytics.reports().batchGet(
+        body={
+         "reportRequests": [{
+           "pageSize": "100000",
+           "viewId": VIEW_ID,
+           "dimensions": [{
+             "name": "ga:pagePath"
+            }],
+           "metrics": [
+            {
+             "expression": "ga:pageviews"
+            }
+           ],
+           "dateRanges": [
+            {
+             "startDate": formatted_start_date,
+             "endDate": datetime.now().strftime('%Y-%m-%d')
+            }
+           ]
+          }
+         ]
+        }
+    ).execute()
+
+    return report
+
+def get_views_for_pages(analytics, pages=[], months=1):
+    report = get_ga_page_views_report(analytics, months)
+    views_for_page = {}
+    try:
+        page_data = report['reports'][0]['data']['rows']
+        for page in pages:
+            views_for_page[page] = 0
+            for pd in page_data:
+                if page in pd['dimensions'][0]:
+                    views_for_page[page] += int(pd['metrics'][0]['values'][0])
+    except KeyError:
+        return {}
+    return views_for_page
